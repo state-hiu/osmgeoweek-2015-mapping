@@ -1,5 +1,5 @@
 /*global L, $, preprocessTimeline*/
-var root = 'http://45.55.146.128:8080';
+var root = 'http://localhost:8080';
 var mapboxTiles = L.tileLayer('https://api.mapbox.com/v4/devseed.07f51987/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoiZGV2c2VlZCIsImEiOiJnUi1mbkVvIn0.018aLhX0Mb0tdtaT2QNe2Q', {
 //    maxZoom: 2,
     minZoom: 2
@@ -102,6 +102,7 @@ var fillEvery5 = setInterval(function () {
   fillLeaderboard('changes');
 }, 5 * 60 * 1000);
 
+//hash is what leaderboard it fills
 function fillLeaderboard (hash) {
   $('#leaderboard').empty();
   $('#Total').empty();
@@ -115,7 +116,7 @@ function fillLeaderboard (hash) {
       }
 
       $('#leaderboard').append(
-        '<li><h1>' + rank + '.</h1>  ' + username + ' <i>' + data[i + 1] + '</i></li>'
+        '<li>' + rank + '.  ' + username + ' <i>' + data[i + 1] + '</i></li>'
       );
     }
     var total = 0;
@@ -124,7 +125,7 @@ function fillLeaderboard (hash) {
     }
 
     $('#Total').append(
-      '<li><h1>Total Contributions:</h1><i> ' + total + '</i></li>'
+      '<li><h1>Total Contributions:<i> ' + total + '</i></h1></li>'
     );
   });
 

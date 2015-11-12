@@ -14,6 +14,12 @@ app.use(cors());
 app.use(compress());
 app.use(express.static(path.join(__dirname, 'static')));
 
+
+// respond with "Hello World!" on the homepage
+app.get('/hello', function (req, res) {
+  res.send('Hello World!');
+});
+
 // Timeline route
 app.get('/timeline', function (req, res) {
   redis.lrange('ogp:timeline', 0, 1000).then(function (result) {
