@@ -20,45 +20,78 @@ app.get('/hello', function (req, res) {
   res.send('Hello World!');
 });
 
-// Timeline route
-app.get('/timeline', function (req, res) {
-  redis.lrange('ogp:timeline', 0, 1000).then(function (result) {
-    res.send(result);
+
+// Buildings per hashtag route
+  app.get('/buildings/:hashtag/', function (req, res) {
+    redis.zrevrange('geoweek:#' + req.params.hashtag + ':buildings', 0, 10, 'WITHSCORES').then(function (result) {
+      res.send(result);
+    });
   });
-});
+
+// Waterways per hashtag route
+  app.get('/waterways/:hashtag/', function (req, res) {
+    redis.zrevrange('geoweek:#' + req.params.hashtag + ':waterways', 0, 10, 'WITHSCORES').then(function (result) {
+      res.send(result);
+    });
+  });
+
+  // Highways per hashtag route
+  app.get('/highways/:hashtag/', function (req, res) {
+    redis.zrevrange('geoweek:#' + req.params.hashtag + ':highways', 0, 10, 'WITHSCORES').then(function (result) {
+      res.send(result);
+    });
+  });
+
+  // Changes per hashtag route
+  app.get('/changes/:hashtag/', function (req, res) {
+    redis.zrevrange('geoweek:#' + req.params.hashtag + ':changes', 0, 10, 'WITHSCORES').then(function (result) {
+      res.send(result);
+    });
+  });
+
+
+
+//Main routes for OSM GeoWeek, all #osmgeoweek tags
 
 // Buildings route
 app.get('/buildings', function (req, res) {
-  redis.zrevrange('ogp:buildings', 0, 10, 'WITHSCORES').then(function (result) {
+  redis.zrevrange('geoweek:buildings', 0, 10, 'WITHSCORES').then(function (result) {
     res.send(result);
   });
 });
 
 // Waterways route
 app.get('/waterways', function (req, res) {
-  redis.zrevrange('ogp:waterways', 0, 10, 'WITHSCORES').then(function (result) {
+  redis.zrevrange('geoweek:waterways', 0, 10, 'WITHSCORES').then(function (result) {
     res.send(result);
   });
 });
 
 // Highways route
 app.get('/highways', function (req, res) {
-  redis.zrevrange('ogp:highways', 0, 10, 'WITHSCORES').then(function (result) {
+  redis.zrevrange('geoweek:highways', 0, 10, 'WITHSCORES').then(function (result) {
     res.send(result);
   });
 });
 
 // Changes route
 app.get('/changes', function (req, res) {
-  redis.zrevrange('ogp:changes', 0, 10, 'WITHSCORES').then(function (result) {
+  redis.zrevrange('geoweek:changes', 0, 10, 'WITHSCORES').then(function (result) {
     res.send(result);
   });
 });
 
-// User route
-app.get('/users/:user', function (req, res, next) {
-  var user = req.params.user;
-  redis.lrange('ogp:timeline:' + user, 0, 1000).then(function (result) {
+// Timeline route, used the geojson diffs to populate the map
+app.get('/timeline', function (req, res) {
+  redis.lrange('geoweek:timeline', 0, 1000).then(function (result) {
+    res.send(result);
+  });
+});
+
+//Individual user timelines
+app.get('/user/:user', function (req, res, next) {
+  //var user = req.params.user;
+  redis.lrange('geoweek:timeline:' + req.params.user, 0, 1000).then(function (result) {
     res.send(result);
   });
 });
