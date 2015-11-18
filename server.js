@@ -49,7 +49,12 @@ app.get('/hello', function (req, res) {
     });
   });
 
-
+  // Timeline route, used the geojson diffs to populate the map
+  app.get('/timeline:hashtag/', function (req, res) {
+    redis.lrange('geoweek:#' + req.params.hashtag + ':timeline', 0, 1000).then(function (result) {
+      res.send(result);
+    });
+  });
 
 //Main routes for OSM GeoWeek, all #osmgeoweek tags
 
