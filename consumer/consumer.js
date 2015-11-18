@@ -55,6 +55,12 @@ function parseRecord (record) {
   //console.log('print out changeset obj: ')
   //console.log(obj)
 
+    var geojsonDiff = {
+    'type': 'FeatureCollection',
+    'features': [],
+    'properties': obj.metadata
+  };
+
   //for each additional hashtag that is being tracked
   for (index = 0; index < hashTagArray.length; index++) {
     
@@ -86,7 +92,7 @@ function parseRecord (record) {
         pipeline.zincrby('geoweek:' + hashTagArray[index] + ':changes', obj.metadata.num_changes, user);
         pipeline.zincrby('geoweek:' + hashTagArray[index] + ':changes', obj.metadata.num_changes, 'total');
 
-        processHashtagRecord(hashtagWays,hashTagArray[index],pipeline,user,elements);
+        processHashtagRecord(hashtagWays,hashTagArray[index],pipeline,user,elements,geojsonDiff);
 
       }
       
@@ -97,12 +103,6 @@ function parseRecord (record) {
 
   // Only process ways
   var ways = R.filter(R.propEq('type', 'way'), elements);
-
-  var geojsonDiff = {
-    'type': 'FeatureCollection',
-    'features': [],
-    'properties': obj.metadata
-  };
 
   ways.forEach(function (way) {
     var tags = R.keys(way.tags);
@@ -162,7 +162,7 @@ function getHashtags (str) {
   return hashlist;
 }
 
-function processHashtagRecord (ways,hashtag,pipeline,user,elements) {
+function processHashtagRecord (ways,hashtag,pipeline,user,elements,geojsonDiff) {
   //looping through each way (for each user)
 
 
@@ -197,18 +197,20 @@ function processHashtagRecord (ways,hashtag,pipeline,user,elements) {
     pipeline.ltrim('geoweek:' + insertHashtag + 'timeline:' + user, 1000);
 
     // Process to geojson
-    if (typeof geojsonDiff !== 'undefined') {
+
+      //console.log("double check!!!")
       var geojsonWay = toGeojson(way);
       geojsonDiff.features.push(geojsonWay);
-    }
+
   });
 
 
-  if (typeof geojsonDiff !== 'undefined') {
+
     // Add changeset to hashtag timeline
+    //console.log("double check!!!222")
     pipeline.lpush('geoweek:' + insertHashtag + 'timeline', JSON.stringify(geojsonDiff));
     pipeline.ltrim('geoweek:' + insertHashtag + 'timeline', 100);
-}
+
 
   // Execute pipeline
   pipeline.exec(function (err, results) {
