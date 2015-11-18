@@ -14,28 +14,33 @@ var readable = new Readable({
 });
 
 // Hashtag array
-var hashTagArray = ["#hotosm-project-1185", "#MissingMaps", "#RedCross", "#Khayelitsha", "#MapGive" ];
+//var hashTagArray = ["#hotosm-project-1185", "#MissingMaps", "#RedCross", "#Khayelitsha", "#MapGive" ];
 
+// Hashtag array
+var hashTagArray = ["#MapSouthKivu", "#MissingMaps", "#PeaceCorps", "#100mapathons", "#MapGive","#gmu","#HMSGW","#marywash","#colostate","#LahoreMapathon","#KCWU","#BNU","#FCCU",
+"#UMT"];
+
+//make lowercase
+hashTagArray = R.map(R.toLower, hashTagArray);
+
+console.log('lower case array');
+console.log(hashTagArray);
 
 console.log('starting up...');
-
 
 //each record is a changeset by one user
 //each record in kinesis is associated with 1 user, and that record can contains multiple ways
 //so you can have multiple records with different changesets, from the same user
 readable
 .on('data', function (records) {
-  //calling parseRecord for each user
-  console.log('about to parse...');
+  //calling parseRecord for each changeset
   parseRecord(records[0].Data.toString());
 })
 .on('checkpoint', function (sequenceNumber) {
   // TODO Add sequenceNumber to redis
-  console.log('about to parse...');
   console.log(sequenceNumber);
 })
 .on('error', function (error) {
-  console.log('about to parse...');
   console.error(error);
 });
 
@@ -47,39 +52,43 @@ function parseRecord (record) {
   var elements = obj.elements;
   var changeset_hashtags = obj.metadata;
 
-  //console.log('print out obj per user: ')
+  //console.log('print out changeset obj: ')
   //console.log(obj)
 
   //for each additional hashtag that is being tracked
   for (index = 0; index < hashTagArray.length; index++) {
     
-    console.log(hashTagArray[index]);
+    //console.log(hashTagArray[index]);
 
-    //filter the records
-    hashtagRecords = R.filter(R.propEq('comment', hashTagArray[index]), obj);
+    //console.log('printing comment: ')
+    //console.log(obj.metadata.comment)
 
-    //console.log('printing hashtagRecords length: ')
-    //console.log(hashtagRecords.length)
+    var hashtagRecords = R.map(R.toLower, getHashtags(obj.metadata.comment));
 
-    if (hashtagRecords.length > 0) {
+    if (hashtagRecords.indexOf(hashTagArray[index]) > -1) {
 
-      var hashtagElements = hashtagRecords.elements;
+      //console.log('bam!: ')
+      //console.log(hashTagArray[index])
+
+      var hashtagElements = obj.elements;
 
       // Only process ways in the filtered records
       var hashtagWays = R.filter(R.propEq('type', 'way'), hashtagElements);
 
-      console.log('filtered changesets from: ')
-      console.log(hashTagArray[index])
+      //console.log('filtered changesets from: ')
+      //console.log(hashTagArray[index])
 
-      console.log('print out Ways from filtered changeset: ')
-      console.log(hashtagWays)
+      //console.log('print out Ways from filtered changeset: ')
+      //console.log(hashtagWays)
 
-      // Add num_changes to count
-      //pipeline.zincrby('geoweek:' + hashtagWays + ':changes', hashtagRecords.metadata.num_changes, user);
-      //pipeline.zincrby('geoweek:' + hashtagWays + ':changes', hashtagRecords.metadata.num_changes, 'total');
+      if (obj.metadata.num_changes) {
+        // Add num_changes to count
+        pipeline.zincrby('geoweek:' + hashTagArray[index] + ':changes', obj.metadata.num_changes, user);
+        pipeline.zincrby('geoweek:' + hashTagArray[index] + ':changes', obj.metadata.num_changes, 'total');
 
-      processHashtagRecord(hashtagWays,hashTagArray[index],pipeline,user,elements);
+        processHashtagRecord(hashtagWays,hashTagArray[index],pipeline,user,elements);
 
+      }
       
     }
   }
@@ -139,14 +148,26 @@ function parseRecord (record) {
 
   }
 
+function getHashtags (str) {
+  if (!str) return [];
+  var wordlist = str.split(' ');
+  var hashlist = [];
+  wordlist.forEach(function (word) {
+    if (word.startsWith('#') && !R.contains(word, hashlist)) {
+      word = word.trim();
+      word = word.replace(/,\s*$/, '');
+      hashlist.push(word);
+    }
+  });
+  return hashlist;
+}
+
 function processHashtagRecord (ways,hashtag,pipeline,user,elements) {
   //looping through each way (for each user)
 
-  insertHashtag = ''
 
-  if (typeof geojsonDiff !== 'undefined') {
     insertHashtag = hashtag + ':';
-  }
+  
 
   console.log('display insertHashtag: ')
   console.log(insertHashtag)
@@ -182,12 +203,12 @@ function processHashtagRecord (ways,hashtag,pipeline,user,elements) {
     }
   });
 
-/*
+
   if (typeof geojsonDiff !== 'undefined') {
-    // Add changeset to global timeline
+    // Add changeset to hashtag timeline
     pipeline.lpush('geoweek:' + insertHashtag + 'timeline', JSON.stringify(geojsonDiff));
     pipeline.ltrim('geoweek:' + insertHashtag + 'timeline', 100);
-*/
+}
 
   // Execute pipeline
   pipeline.exec(function (err, results) {
