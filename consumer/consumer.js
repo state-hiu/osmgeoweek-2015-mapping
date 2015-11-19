@@ -18,7 +18,7 @@ var readable = new Readable({
 
 // Hashtag array
 var hashTagArray = ["#MapSouthKivu", "#MissingMaps", "#PeaceCorps", "#100mapathons", "#MapGive","#gmu","#HMSGW","#marywash","#colostate","#LahoreMapathon","#KCWU","#BNU","#FCCU",
-"#UMT"];
+"#UMT","#hubevent"];
 
 //make lowercase
 hashTagArray = R.map(R.toLower, hashTagArray);
@@ -64,40 +64,39 @@ function parseRecord (record) {
   //for each additional hashtag that is being tracked
   for (index = 0; index < hashTagArray.length; index++) {
     
-    //console.log(hashTagArray[index]);
+      //console.log(hashTagArray[index]);
 
-    //console.log('printing comment: ')
-    //console.log(obj.metadata.comment)
+      //console.log('printing comment: ')
+      //console.log(obj.metadata.comment)
 
-    var hashtagRecords = R.map(R.toLower, getHashtags(obj.metadata.comment));
+      var hashtagRecords = R.map(R.toLower, getHashtags(obj.metadata.comment));
 
-    if (hashtagRecords.indexOf(hashTagArray[index]) > -1) {
+      if (hashtagRecords.indexOf(hashTagArray[index]) > -1) {
 
-      //console.log('bam!: ')
-      //console.log(hashTagArray[index])
+          //console.log('bam!: ')
+          //console.log(hashTagArray[index])
 
-      var hashtagElements = obj.elements;
+          var hashtagElements = obj.elements;
 
-      // Only process ways in the filtered records
-      var hashtagWays = R.filter(R.propEq('type', 'way'), hashtagElements);
+          // Only process ways in the filtered records
+          var hashtagWays = R.filter(R.propEq('type', 'way'), hashtagElements);
 
-      //console.log('filtered changesets from: ')
-      //console.log(hashTagArray[index])
+          //console.log('filtered changesets from: ')
+          //console.log(hashTagArray[index])
 
-      //console.log('print out Ways from filtered changeset: ')
-      //console.log(hashtagWays)
+          //console.log('print out Ways from filtered changeset: ')
+          //console.log(hashtagWays)
 
-      if (obj.metadata.num_changes) {
-        // Add num_changes to count
-        pipeline.zincrby('geoweek:' + hashTagArray[index] + ':changes', obj.metadata.num_changes, user);
-        pipeline.zincrby('geoweek:' + hashTagArray[index] + ':changes', obj.metadata.num_changes, 'total');
+          if (obj.metadata.num_changes) {
+            // Add num_changes to count
+            pipeline.zincrby('geoweek:' + hashTagArray[index] + ':changes', obj.metadata.num_changes, user);
+            pipeline.zincrby('geoweek:' + hashTagArray[index] + ':changes', obj.metadata.num_changes, 'total');
 
-        processHashtagRecord(hashtagWays,hashTagArray[index],pipeline,user,elements,geojsonDiff);
+            processHashtagRecord(hashtagWays,hashTagArray[index],pipeline,user,elements,geojsonDiff);
 
+          }
       }
-      
     }
-  }
 
   //for the main hashtag
 
@@ -146,7 +145,7 @@ function parseRecord (record) {
     if (err) console.error(err);
   });
 
-  }
+}
 
 function getHashtags (str) {
   if (!str) return [];
@@ -213,9 +212,10 @@ function processHashtagRecord (ways,hashtag,pipeline,user,elements,geojsonDiff) 
 
 
   // Execute pipeline
-  pipeline.exec(function (err, results) {
-    if (err) console.error(err);
-  });
+  // made a mistake earlier of having the pipeline.exec fire off twice, thus creating double the features
+  //pipeline.exec(function (err, results) {
+    //if (err) console.error(err);
+  //});
 }
 
 function toGeojson (diffEl) {
